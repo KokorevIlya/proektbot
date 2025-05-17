@@ -8,6 +8,9 @@ import requests
 from deep_translator import GoogleTranslator
 import sqlite3
 from config import apikey
+
+
+# немного кнопок
 start_keyboard = [['/dice', '/weather', '/coin', '/reviews', '/meme', '/cat'],
                   ['/timer', '/help', '/transl', '/gen_nick', '/gen_password']]
 dice_keyboard = [['кинуть один шестигранный кубик', 'кинуть 2 шестигранных кубика одновременно'],
@@ -34,17 +37,22 @@ markup_nick = ReplyKeyboardMarkup(nick_keyboard, one_time_keyboard=False)
 markup_meme = ReplyKeyboardMarkup(meme_keyboard, one_time_keyboard=False)
 markup_cat = ReplyKeyboardMarkup(cat_keyboard, one_time_keyboard=False)
 
+# подключаем логирование
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
 )
 
 logger = logging.getLogger(__name__)
 
+# старт
 async def start(update, context):
     await update.message.reply_text(
-        "Я бот-справочник. Какая информация вам нужна?",
+        "Я бот-помощник. Сделаю вашу жизнь лучше!",
         reply_markup=markup
     )
+
+
+# кидаем рандомный мем
 async def meme(update, context):
     n = randint(1, 20)
     file_path = f'img/meme/{n}.jpg'
@@ -58,6 +66,7 @@ async def meme(update, context):
     file_data.close()
 
 
+# кидаем рандомного кота
 async def cats(update, context):
     n = randint(1, 99)
     file_path = f'img/cat/{n}.jpg'
@@ -70,6 +79,8 @@ async def cats(update, context):
     )
     file_data.close()
 
+
+# генерируем пароль
 async def gen_password(update, context):
     words = "qwertyuiopasdfghjklzxcvbnm"
     words_pass = words + words.upper() + '1234567890!#$%&*'
@@ -81,6 +92,8 @@ async def gen_password(update, context):
         reply_markup=markup_password
     )
 
+
+# генерируем ник
 async def gen_nick(update, context):
     words = "qwertyuiopasdfghjklzxcvbnm"
     words_pass = words + words.upper() + '1234567890'
@@ -92,6 +105,8 @@ async def gen_nick(update, context):
         reply_markup=markup_nick
     )
 
+
+# Отзывы о боте
 async def reviews(update, context):
     con = sqlite3.connect("reviews.sqlite")
     cur = con.cursor()
@@ -110,7 +125,6 @@ async def reviews(update, context):
         await update.message.reply_text('Укажите только одну оценку', reply_markup=markup_comeback)
         con.close()
         return
-
     try:
         rating = int(context.args[0])
         if not (0 <= rating <= 10):
@@ -131,6 +145,7 @@ async def reviews(update, context):
     con.close()
 
 
+# переводчик
 async def transl(update, context):
     words = ''
     for i in range(len(context.args)):
@@ -156,6 +171,7 @@ async def transl(update, context):
             reply_markup=markup_transl)
 
 
+# калькулятор
 async def calc(update, context):
     expression = ''
     if context.args:
@@ -176,11 +192,15 @@ async def calc(update, context):
             reply_markup=markup_comeback)
 
 
+# помощь
 async def help(update, context):
     await update.message.reply_text(
         "Свяжитесь с администраторами:\n @Ilya06247 или @Volody_razmarin",
         reply_markup=markup_comeback
     )
+
+
+# кидать кубики
 async def dice(update, context):
     if update.message.text == '/dice':
         await update.message.reply_text(
@@ -188,6 +208,8 @@ async def dice(update, context):
         reply_markup=markup_dice
         )
 
+
+# орёл - решка
 async def coin(update, context):
     n = randint(0, 1)
     if n == 1:
@@ -200,24 +222,29 @@ async def coin(update, context):
     )
 
 
+# таймер
 async def timer(update, context):
     if update.message.text == '/timer':
         await update.message.reply_text(
         "Выберите время",
         reply_markup=markup_timer
         )
+
+
 async def task(context):
     await context.bot.send_message(context.job.chat_id, text=f'КУКУ, Время прошло!!')
 
+
+# работаем с чатом
 async def echo(update, context):
-    if update.message.text == "С русского на английский":
+    if update.message.text == "С русского на английский": # обрабатываем конфиг перевода
         f = open(f'translate/{update.message.from_user.id}.txt', 'w')
         f.write("С русского на английский")
         await update.message.reply_text(
             "Настройки перевода сохранены",
             reply_markup=markup
         )
-    elif update.message.text == 'С английского на русский':
+    elif update.message.text == 'С английского на русский': # обрабатываем конфиг перевода
         f = open(f'translate/{update.message.from_user.id}.txt', 'w')
         f.write('С английского на русский')
         await update.message.reply_text(
@@ -233,9 +260,10 @@ async def echo(update, context):
         await update.message.reply_text(rool_dice(3))
     if update.message.text == 'вернуться назад':
         await update.message.reply_text(
-            "Я бот-справочник. Какая информация вам нужна?",
+            "Я бот-помощник. Сделаю вашу жизнь лучше!   ",
             reply_markup=markup
         )
+    # работаем с кубиками
     chat_id = update.effective_message.chat_id
     if update.message.text == '30 секунд':
         context.job_queue.run_once(task, 30, chat_id=chat_id, name=str(chat_id), data=30)
@@ -246,7 +274,10 @@ async def echo(update, context):
     if update.message.text == '5 минут':
         context.job_queue.run_once(task, 300, chat_id=chat_id, name=str(chat_id), data=300)
         await update.message.reply_text('вернусь через 5 минут', reply_markup=markup_close)
+    # таймер
 
+
+# закрыть таймер
 async def close(update, context):
     """Удаляет задачу, если пользователь передумал"""
     chat_id = update.message.chat_id
@@ -254,6 +285,8 @@ async def close(update, context):
     text = 'Таймер отменен!' if job_removed else 'У вас нет активных таймеров'
     await update.message.reply_text(text, reply_markup=markup_timer)
 
+
+# погода + карта
 async def weather(update, context):
     global apikey
     city = ""
@@ -279,7 +312,6 @@ async def weather(update, context):
                 "format": "json",
                 "geocode": city
             })
-
             toponym = response["response"]["GeoObjectCollection"][
                 "featureMember"][0]["GeoObject"]
             print(toponym)
@@ -296,7 +328,7 @@ async def weather(update, context):
             await update.message.reply_text(f'Произошла ошибка, проверьте название города', reply_markup=markup_comeback)
 
 
-
+# удаление таймера
 def remove_job_if_exists(name, context):
     """Удаляем задачу по имени.
     Возвращаем True если задача была успешно удалена."""
@@ -306,6 +338,8 @@ def remove_job_if_exists(name, context):
     for job in current_jobs:
         job.schedule_removal()
     return True
+
+
 
 async def get_response(url, params):
     logger.info(f"getting {url}")
@@ -327,11 +361,13 @@ def get_ll_spn(toponym):
 
     return ll, span
 
+
 def rool_dice(n):
     if n == 1:
         return int(randint(1, 6))
     if n == 3:
         return randint(1, 20)
+
 
 def main():
     application = Application.builder().token(BOT_TOKEN).build()
